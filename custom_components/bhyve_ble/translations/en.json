@@ -20,6 +20,21 @@
   },
   "options": {
     "step": {
+      "init": {
+        "title": "Orbit B-hyve",
+        "description": "Add a timer or change Bluetooth status polling.",
+        "menu_options": {
+          "add_device": "Add timer",
+          "poll_interval": "Status polling interval"
+        }
+      },
+      "poll_interval": {
+        "title": "Status polling interval",
+        "description": "How often Home Assistant reads battery and station status from each timer over Bluetooth. Longer intervals reduce battery use. Turning a station on or off still triggers an immediate update.",
+        "data": {
+          "poll_interval_hours": "Interval (hours)"
+        }
+      },
       "add_device": {
         "title": "Add timer",
         "description": "Put the timer in pairing mode. The address field lists connectable Bluetooth devices Home Assistant sees. The integration provisions with your saved network key and confirms pairing.",
@@ -31,7 +46,8 @@
     "error": {
       "cannot_connect": "Could not connect or provision the timer. Put it in pairing mode and try again.",
       "verify_failed": "Handshake worked but the timer did not return device information. Try again.",
-      "already_configured": "This address is already added."
+      "already_configured": "This address is already added.",
+      "invalid_interval": "Enter a valid number of hours."
     },
     "abort": {
       "device_added": "Hose Watering Timer added successfully."

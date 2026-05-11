@@ -33,6 +33,8 @@ class BhyveBleCoordinator(DataUpdateCoordinator[dict]):
         entry: ConfigEntry,
         address: str,
         name: str,
+        *,
+        update_interval: timedelta,
     ) -> None:
         self.entry = entry
         self.address = address
@@ -46,7 +48,7 @@ class BhyveBleCoordinator(DataUpdateCoordinator[dict]):
             hass,
             _LOGGER,
             name=f"{DOMAIN}-{self.address}",
-            update_interval=timedelta(seconds=30),
+            update_interval=update_interval,
         )
 
     @property
@@ -61,7 +63,7 @@ class BhyveBleCoordinator(DataUpdateCoordinator[dict]):
             try:
                 n = int(self._device_info["numStations"])
                 return max(1, min(n, 64))
-            except TypeError, ValueError:
+            except (TypeError, ValueError):
                 pass
         n = parse_num_stations_from_decoded(self._last_message)
         if n is not None:

@@ -6,7 +6,12 @@ import base64
 import logging
 from typing import TYPE_CHECKING
 
-from .const import CONF_DEVICES, CONF_NETWORK_KEY_B64, default_bhyve_device_name
+from .const import (
+    CONF_DEVICES,
+    CONF_NETWORK_KEY_B64,
+    default_bhyve_device_name,
+    poll_interval_timedelta,
+)
 from .coordinator import BhyveBleCoordinator
 
 if TYPE_CHECKING:
@@ -34,6 +39,7 @@ class BhyveBleHub:
                 self.entry,
                 address,
                 default_bhyve_device_name(address),
+                update_interval=poll_interval_timedelta(self.entry),
             )
 
     async def async_shutdown(self) -> None:

@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+from datetime import timedelta
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+
 DOMAIN = "bhyve_ble"
 
 
@@ -30,6 +36,26 @@ CONF_DEVICES = "devices"  # dict[str, dict] — address -> optional per-device m
 
 # Config flow: optional paste (hex or base64); empty = generate.
 CONF_NETWORK_KEY_INPUT = "network_key_input"
+
+# Options: how often to poll each timer for device/status (battery, stations). Stored in hours (float).
+CONF_POLL_INTERVAL_HOURS = "poll_interval_hours"
+DEFAULT_POLL_INTERVAL_HOURS = 24.0
+MIN_POLL_INTERVAL_HOURS = 1 / 60
+MAX_POLL_INTERVAL_HOURS = 24 * 14  # 14 days
+
+
+def poll_interval_timedelta(entry: ConfigEntry) -> timedelta:
+    """Coordinator update interval from config entry options (default: once per day)."""
+    raw = entry.options.get(CONF_POLL_INTERVAL_HOURS)
+    if raw is None:
+        return timedelta(hours=DEFAULT_POLL_INTERVAL_HOURS)
+    try:
+        hours = float(raw)
+    except (TypeError, ValueError):
+        return timedelta(hours=DEFAULT_POLL_INTERVAL_HOURS)
+    hours = max(MIN_POLL_INTERVAL_HOURS, min(hours, MAX_POLL_INTERVAL_HOURS))
+    return timedelta(seconds=int(round(hours * 3600)))
+
 
 # Deprecated (v1 single-device entry); kept for migration only.
 CONF_IV12_B64 = "iv12_b64"

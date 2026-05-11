@@ -61,6 +61,10 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+async def _async_reload_on_entry_update(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    await hass.config_entries.async_reload(entry.entry_id)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     from homeassistant.core import callback
 
@@ -78,6 +82,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = hub
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     callback(_sync_default_device_names_to_registry_impl)(hass, entry)
+    entry.async_on_unload(entry.add_update_listener(_async_reload_on_entry_update))
     return True
 
 
@@ -110,5 +115,4 @@ async def async_remove_config_entry_device(
         config_entry,
         data={**config_entry.data, CONF_DEVICES: devices},
     )
-    await hass.config_entries.async_reload(config_entry.entry_id)
     return True

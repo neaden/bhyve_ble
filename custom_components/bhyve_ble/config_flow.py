@@ -10,6 +10,9 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.selector import (
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
@@ -19,7 +22,11 @@ from .const import (
     CONF_DEVICES,
     CONF_NETWORK_KEY_B64,
     CONF_NETWORK_KEY_INPUT,
+    CONF_POLL_INTERVAL_HOURS,
+    DEFAULT_POLL_INTERVAL_HOURS,
     DOMAIN,
+    MAX_POLL_INTERVAL_HOURS,
+    MIN_POLL_INTERVAL_HOURS,
     normalize_ble_address,
 )
 from .network_key import parse_or_generate_network_key
@@ -104,7 +111,46 @@ class BhyveBleOptionsFlow(config_entries.OptionsFlow):
     """Device onboarding: Pairing mode -> GATT handshake -> confirm with valid device traffic."""
 
     async def async_step_init(self, user_input: dict | None = None) -> FlowResult:
-        return await self.async_step_add_device()
+        return self.async_show_menu(
+            step_id="init",
+            menu_options=["add_device", "poll_interval"],
+        )
+
+    async def async_step_poll_interval(self, user_input: dict | None = None) -> FlowResult:
+        errors: dict[str, str] = {}
+        current = float(
+            self.config_entry.options.get(CONF_POLL_INTERVAL_HOURS, DEFAULT_POLL_INTERVAL_HOURS)
+        )
+        if user_input is not None:
+            try:
+                hours = float(user_input[CONF_POLL_INTERVAL_HOURS])
+            except (TypeError, ValueError):
+                errors["base"] = "invalid_interval"
+            else:
+                hours = max(MIN_POLL_INTERVAL_HOURS, min(hours, MAX_POLL_INTERVAL_HOURS))
+                return self.async_create_entry(
+                    title="",
+                    data={CONF_POLL_INTERVAL_HOURS: hours},
+                )
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_POLL_INTERVAL_HOURS, default=current): NumberSelector(
+                    NumberSelectorConfig(
+                        min=MIN_POLL_INTERVAL_HOURS,
+                        max=MAX_POLL_INTERVAL_HOURS,
+                        step=0.25,
+                        mode=NumberSelectorMode.BOX,
+                        unit_of_measurement="h",
+                    )
+                ),
+            }
+        )
+        return self.async_show_form(
+            step_id="poll_interval",
+            data_schema=schema,
+            errors=errors,
+        )
 
     async def async_step_add_device(self, user_input: dict | None = None) -> FlowResult:
         from .ble import BhyveBleProvisionError, async_provision_with_network_key
@@ -139,7 +185,6 @@ class BhyveBleOptionsFlow(config_entries.OptionsFlow):
                         self.config_entry,
                         data={**self.config_entry.data, CONF_DEVICES: devices},
                     )
-                    await self.hass.config_entries.async_reload(self.config_entry.entry_id)
                     return self.async_abort(reason="device_added")
 
         if discovered:

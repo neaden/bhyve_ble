@@ -79,5 +79,5 @@ class BhyveBleBatteryMvSensor(BhyveBleEntity, SensorEntity):
         mv = bat.get("batteryLevelMV")
         try:
             return int(mv) if mv is not None else None
-        except TypeError, ValueError:
+        except (TypeError, ValueError):
             return None
