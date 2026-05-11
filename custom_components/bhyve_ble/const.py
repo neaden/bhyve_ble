@@ -54,7 +54,7 @@ def poll_interval_timedelta(entry: ConfigEntry) -> timedelta:
     except (TypeError, ValueError):
         return timedelta(hours=DEFAULT_POLL_INTERVAL_HOURS)
     hours = max(MIN_POLL_INTERVAL_HOURS, min(hours, MAX_POLL_INTERVAL_HOURS))
-    return timedelta(seconds=int(round(hours * 3600)))
+    return timedelta(seconds=round(hours * 3600))
 
 
 # Deprecated (v1 single-device entry); kept for migration only.

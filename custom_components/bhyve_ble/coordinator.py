@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import base64
 import logging
-from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -18,6 +17,8 @@ from .orbit_codec import (
 from .transport import BhyveBleTransport, BhyveBleTransportError
 
 if TYPE_CHECKING:
+    from datetime import timedelta
+
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
 
