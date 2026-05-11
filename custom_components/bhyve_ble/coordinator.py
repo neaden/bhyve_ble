@@ -64,7 +64,7 @@ class BhyveBleCoordinator(DataUpdateCoordinator[dict]):
             try:
                 n = int(self._device_info["numStations"])
                 return max(1, min(n, 64))
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 pass
         n = parse_num_stations_from_decoded(self._last_message)
         if n is not None:

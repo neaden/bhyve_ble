@@ -124,7 +124,7 @@ class BhyveBleOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             try:
                 hours = float(user_input[CONF_POLL_INTERVAL_HOURS])
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 errors["base"] = "invalid_interval"
             else:
                 hours = max(MIN_POLL_INTERVAL_HOURS, min(hours, MAX_POLL_INTERVAL_HOURS))
