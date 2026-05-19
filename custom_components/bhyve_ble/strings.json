@@ -1,5 +1,12 @@
 {
   "title": "Orbit B-hyve",
+  "entity": {
+    "button": {
+      "refresh_status": {
+        "name": "Refresh status"
+      }
+    }
+  },
   "config": {
     "step": {
       "user": {
