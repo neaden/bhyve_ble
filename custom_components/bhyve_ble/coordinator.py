@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
+from .logging import log_ble_merged, log_ble_rx, log_ble_rx_decode_failed, log_ble_tx
 from .const import CONF_NETWORK_KEY_B64, DOMAIN
 from .orbit_codec import (
     decode_orbit_ble_plaintext,
@@ -85,6 +86,7 @@ class BhyveBleCoordinator(DataUpdateCoordinator[dict]):
     async def async_send_orbit_plaintext(self, plaintext: bytes) -> None:
         if not self._transport.is_connected:
             await self._transport.async_connect_and_subscribe(self._handle_notify)
+        log_ble_tx(self.address, ORBIT_APP_MSG_TYPE, plaintext)
         await self._transport.async_send_plaintext(ORBIT_APP_MSG_TYPE, plaintext)
 
     async def async_shutdown(self) -> None:
@@ -94,10 +96,12 @@ class BhyveBleCoordinator(DataUpdateCoordinator[dict]):
         try:
             decoded = decode_orbit_ble_plaintext(plaintext)
         except Exception as e:  # noqa: BLE001
-            _LOGGER.debug("Failed to decode Orbit plaintext (%s): %s", self.address, e)
+            log_ble_rx_decode_failed(self.address, msg_type, plaintext, e)
             return
         decoded["_link"] = {"msg_type": msg_type, "bytes": len(plaintext)}
+        log_ble_rx(self.address, msg_type, plaintext, decoded)
         self._last_message = self._merge_orbit_decoded(self._last_message, decoded)
+        log_ble_merged(self.address, self._last_message)
         di = (self._last_message.get("message") or {}).get("deviceInfo")
         if di:
             self._device_info = di
@@ -120,6 +124,8 @@ class BhyveBleCoordinator(DataUpdateCoordinator[dict]):
                 ORBIT_APP_MSG_TYPE, encode_get_device_status_info_plaintext()
             )
             await asyncio.sleep(0.35)
+
+            log_ble_merged(self.address, self._last_message)
 
             if self._last_message:
                 di = (self._last_message.get("message") or {}).get("deviceInfo")
