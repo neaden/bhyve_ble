@@ -165,6 +165,89 @@ def encode_get_device_status_info_plaintext() -> bytes:
     return wrap_orbit_ble_body(msg_body)
 
 
+def deep_merge_partial_proto_dict(base: dict, update: dict) -> dict:
+    """
+    Recursively merge ``update`` into ``base``.
+
+    Consecutive BLE notifications often send the same oneof branch (e.g.
+    ``deviceStatusInfo``) with different subsets of fields. A shallow merge at the
+    branch level would drop siblings such as ``batteryStatus`` when a later payload
+    omits them even though the device did not clear those values.
+    """
+    out = dict(base)
+    for key, val in update.items():
+        if key in out and isinstance(out[key], dict) and isinstance(val, dict):
+            out[key] = deep_merge_partial_proto_dict(out[key], val)
+        else:
+            out[key] = val
+    return out
+
+
+# Hose-timer battery mV to percent (linear, 2400-3000 mV).
+BATTERY_MV_EMPTY = 2400
+BATTERY_MV_FULL = 3000
+
+
+def mv_to_percent_linear(mv: int, mv_empty: int, mv_full: int) -> int:
+    """Clamp mV to [empty, full], linear scale to 0-100, truncate toward zero."""
+    low = min(mv_empty, mv_full)
+    high = max(mv_empty, mv_full)
+    if high <= low:
+        return 0
+    clamped = max(low, min(mv, high))
+    return int((clamped - low) * 100 / (high - low))
+
+
+def estimate_battery_percent_from_mv(mv: int) -> int:
+    """Map pack millivolts to 0-100 when the device omits ``batteryLevelPercent``."""
+    return mv_to_percent_linear(mv, BATTERY_MV_EMPTY, BATTERY_MV_FULL)
+
+
+def parse_battery_percent_mv_from_decoded(decoded: dict | None) -> tuple[int | None, int | None]:
+    """Read battery percent and voltage from ``deviceStatusInfo``."""
+    if not decoded:
+        return None, None
+    m = decoded.get("message") or {}
+    dsi = m.get("deviceStatusInfo") or {}
+    bat = dsi.get("batteryStatus") or {}
+
+    pct_raw = bat.get("batteryLevelPercent")
+    if pct_raw is None:
+        pct_raw = dsi.get("batteryLevelPercent")
+
+    mv_raw = bat.get("batteryLevelMV")
+    if mv_raw is None:
+        mv_raw = dsi.get("batteryLevelMV")
+
+    pct: int | None = None
+    if pct_raw is not None:
+        try:
+            p = int(pct_raw)
+            pct = max(0, min(100, p))
+        except TypeError, ValueError:
+            pct = None
+
+    mv: int | None = None
+    if mv_raw is not None:
+        try:
+            mv = int(mv_raw)
+        except TypeError, ValueError:
+            mv = None
+
+    return pct, mv
+
+
+def resolve_battery_percent_display(
+    pct: int | None, mv: int | None
+) -> tuple[int | None, str | None]:
+    """Percent for the Battery entity: device value, else estimate from mV."""
+    if pct is not None:
+        return pct, "device"
+    if mv is not None:
+        return estimate_battery_percent_from_mv(mv), "estimated_mv"
+    return None, None
+
+
 def parse_num_stations_from_decoded(decoded: dict | None) -> int | None:
     """Read ``deviceInfo.numStations`` from a decoded Orbit BLE message (if present)."""
     if not decoded:

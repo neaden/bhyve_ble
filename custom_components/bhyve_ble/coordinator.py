@@ -7,10 +7,11 @@ from typing import TYPE_CHECKING
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .logging import log_ble_merged, log_ble_rx, log_ble_rx_decode_failed, log_ble_tx
 from .const import CONF_NETWORK_KEY_B64, DOMAIN
+from .logging import log_ble_merged, log_ble_rx, log_ble_rx_decode_failed, log_ble_tx
 from .orbit_codec import (
     decode_orbit_ble_plaintext,
+    deep_merge_partial_proto_dict,
     encode_get_device_info_plaintext,
     encode_get_device_status_info_plaintext,
     parse_num_stations_from_decoded,
@@ -79,6 +80,11 @@ class BhyveBleCoordinator(DataUpdateCoordinator[dict]):
         prev_msg = prev.get("message") or {}
         new_msg = new.get("message") or {}
         merged_msg = {**prev_msg, **new_msg}
+        for key in ("deviceInfo", "deviceStatusInfo"):
+            prev_b = prev_msg.get(key)
+            new_b = new_msg.get(key)
+            if isinstance(prev_b, dict) and isinstance(new_b, dict):
+                merged_msg[key] = deep_merge_partial_proto_dict(prev_b, new_b)
         out = {**new, "message": merged_msg}
         out["_framing"] = new.get("_framing") or prev.get("_framing")
         return out

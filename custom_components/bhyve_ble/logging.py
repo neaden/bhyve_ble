@@ -1,4 +1,5 @@
-"""Optional debug logging for Orbit BLE plaintext and decoded payloads.
+"""
+Optional debug logging for Orbit BLE plaintext and decoded payloads.
 
 Enable in Home Assistant ``configuration.yaml``::
 
@@ -68,7 +69,9 @@ def log_ble_rx(
     )
 
 
-def log_ble_rx_decode_failed(address: str, link_msg_type: int, plaintext: bytes, err: Exception) -> None:
+def log_ble_rx_decode_failed(
+    address: str, link_msg_type: int, plaintext: bytes, err: Exception
+) -> None:
     _debug(address, "RX decode failed %s err=%s", _packet_summary(link_msg_type, plaintext), err)
 
 
