@@ -46,6 +46,9 @@ class BhyveBleCoordinator(DataUpdateCoordinator[dict]):
         self._transport = BhyveBleTransport(hass, self.address, self._network_key16)
         self._last_message: dict | None = None
         self._device_info: dict | None = None
+        # Run duration (seconds) sent on a station switch turn-on. Settable via the
+        # "Run Duration" number entity; default 600 preserves the original behavior.
+        self.manual_run_time_sec: int = 600
 
         super().__init__(
             hass,

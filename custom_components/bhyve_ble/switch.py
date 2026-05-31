@@ -56,7 +56,7 @@ class BhyveBleStationManualWateringSwitch(BhyveBleEntity, SwitchEntity):
     async def async_turn_on(self, **kwargs) -> None:
         pt = encode_timer_mode_plaintext(
             "manualMode",
-            run_time_sec=600,
+            run_time_sec=self.coordinator.manual_run_time_sec,
             station_id=self._station_id,
         )
         await self.coordinator.async_send_orbit_plaintext(pt)
